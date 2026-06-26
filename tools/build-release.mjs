@@ -121,6 +121,8 @@ async function ensureDependencies() {
 async function prepareGithubPagesOutput(outputDir, baseUrl = '') {
   const indexPath = path.join(outputDir, 'index.html');
   const fallbackPath = path.join(outputDir, '404.html');
+  const noJekyllPath = path.join(outputDir, '.nojekyll');
+  await writeFile(noJekyllPath, '# Disable Jekyll so Expo assets in _expo stay reachable.\n', 'utf8');
   if (baseUrl) {
     await copyFile(indexPath, fallbackPath);
     return;

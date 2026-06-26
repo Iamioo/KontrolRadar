@@ -1,4 +1,4 @@
-import { access, copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const packagePath = path.join(rootDir, 'package.json');
 const appConfigPath = path.join(rootDir, 'app.json');
+const GITHUB_ASSET_DIR = 'expo-assets';
 
 function printHeader() {
   console.log('');
@@ -124,6 +125,16 @@ async function prepareGithubPagesOutput(outputDir, baseUrl = '') {
   const noJekyllPath = path.join(outputDir, '.nojekyll');
   await writeFile(noJekyllPath, '# Disable Jekyll so Expo assets in _expo stay reachable.\n', 'utf8');
   if (baseUrl) {
+    const expoAssetPath = path.join(outputDir, '_expo');
+    const githubAssetPath = path.join(outputDir, GITHUB_ASSET_DIR);
+    if (await fileExists(expoAssetPath)) {
+      await rm(githubAssetPath, { force: true, recursive: true });
+      await rename(expoAssetPath, githubAssetPath);
+    }
+
+    const html = await readFile(indexPath, 'utf8');
+    const patchedHtml = html.replaceAll(`${baseUrl}/_expo/`, `${baseUrl}/${GITHUB_ASSET_DIR}/`);
+    await writeFile(indexPath, patchedHtml, 'utf8');
     await copyFile(indexPath, fallbackPath);
     return;
   }

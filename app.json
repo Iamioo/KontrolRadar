@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "KontrolRadar",
+    "slug": "KontrolRadar",
+    "scheme": "kontrolradar",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "KontrolRadar nutzt deinen Standort, um nahegelegene Haltestellen vorzuschlagen und lokale OePNV-Hinweise anzuzeigen."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "plugins": [
+      "expo-location"
+    ],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

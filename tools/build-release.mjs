@@ -34,10 +34,14 @@ async function fileExists(filePath) {
   }
 }
 
-function runCommand(command, args, workingDirectory = rootDir) {
+function runCommand(command, args, workingDirectory = rootDir, extraEnv = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd: workingDirectory,
+      env: {
+        ...process.env,
+        ...extraEnv,
+      },
       shell: true,
       stdio: 'inherit',
     });
@@ -114,9 +118,14 @@ async function ensureDependencies() {
   }
 }
 
-async function prepareGithubPagesOutput(outputDir) {
+async function prepareGithubPagesOutput(outputDir, baseUrl = '') {
   const indexPath = path.join(outputDir, 'index.html');
   const fallbackPath = path.join(outputDir, '404.html');
+  if (baseUrl) {
+    await copyFile(indexPath, fallbackPath);
+    return;
+  }
+
   const html = await readFile(indexPath, 'utf8');
   const patchedHtml = html.replace(/(href|src)=["']\/(?!\/)/g, '$1="./');
 
@@ -130,6 +139,7 @@ async function main() {
   const currentVersion = packageJson.version || appJson.expo?.version || '1.0.0';
   const currentAndroidVersionCode = appJson.expo?.android?.versionCode ?? 1;
   const currentIosBuildNumber = appJson.expo?.ios?.buildNumber ?? '1';
+  const defaultGithubBaseUrl = `/${appJson.expo?.slug || packageJson.name || 'app'}`;
 
   printHeader();
   console.log(`Aktuelle App-Version : ${currentVersion}`);
@@ -161,6 +171,7 @@ async function main() {
       true,
     );
     const shouldRunTypecheck = await askYesNo(rl, 'Vorher TypeScript-Pruefung ausfuehren?', true);
+    let githubBaseUrl = defaultGithubBaseUrl;
 
     let androidVersionCode = currentAndroidVersionCode + 1;
     let iosBuildNumber = String(Number.parseInt(currentIosBuildNumber, 10) || 1);
@@ -174,6 +185,10 @@ async function main() {
       iosBuildNumber = String(
         await askPositiveInt(rl, 'iOS buildNumber', (Number.parseInt(currentIosBuildNumber, 10) || 1) + 1),
       );
+    }
+
+    if (targetChoice === '2') {
+      githubBaseUrl = await askDefault(rl, 'GitHub Pages Unterpfad', defaultGithubBaseUrl);
     }
 
     rl.close();
@@ -238,11 +253,16 @@ async function main() {
 
       console.log('');
       console.log(`GitHub-Pages-Export nach ${outputDir}`);
-      await runCommand('npx.cmd', ['expo', 'export', '--platform', 'web', '--output-dir', outputDir]);
-      await prepareGithubPagesOutput(outputDir);
+      await runCommand(
+        'npx.cmd',
+        ['expo', 'export', '--platform', 'web', '--output-dir', outputDir],
+        rootDir,
+        { EXPO_BASE_URL: githubBaseUrl },
+      );
+      await prepareGithubPagesOutput(outputDir, githubBaseUrl);
       console.log('');
       console.log('GitHub-Pages-Build erfolgreich erstellt: docs');
-      console.log('Hinweis: Fuer Projekt-Pages muessen die exportierten Root-Pfade relativ angepasst sein.');
+      console.log(`GitHub-Pages-Basis: ${githubBaseUrl}`);
       return;
     }
 
